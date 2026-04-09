@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field (completed 2026-04-09)
 - [x] **Phase 5: AI Commands** - Claude API reformulation with preset commands (completed 2026-04-09)
 - [x] **Phase 6: Offline Fallback** - whisper.cpp local STT + engine selection (completed 2026-04-09)
-- [ ] **Phase 7: Distribution & Signing** - macOS notarization + Windows signing + CI pipeline
+- [x] **Phase 7: Distribution & Signing** - macOS notarization + Windows signing + CI pipeline (completed 2026-04-09)
 
 ## Phase Details
 
@@ -135,8 +135,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 07-01-PLAN.md — Verify tauri.conf.json metadata and run local universal macOS build
-- [ ] 07-02-PLAN.md — GitHub Actions release workflow (matrix: macOS signing + notarization, Windows signing)
-- [ ] 07-03-PLAN.md — Human verification: trigger tag push, confirm all 4 success criteria
+- [x] 07-02-PLAN.md — GitHub Actions release workflow (matrix: macOS signing + notarization, Windows signing)
+- [x] 07-03-PLAN.md — Human verification: trigger tag push, confirm all 4 success criteria
 
 ## Progress
 
@@ -151,4 +151,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
 | 5. AI Commands | 3/3 | Complete    | 2026-04-09 |
 | 6. Offline Fallback | 4/4 | Complete    | 2026-04-09 |
-| 7. Distribution & Signing | 1/3 | In Progress|  |
+| 7. Distribution & Signing | 3/3 | Complete    | 2026-04-09 |
