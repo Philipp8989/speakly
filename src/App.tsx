@@ -1,11 +1,12 @@
-// Speakly App Root — Phase 2 + Phase 3 + Phase 4
+// Speakly App Root — Phase 2 + Phase 3 + Phase 4 + Phase 5
 // Routet zwischen Tray-Popup und Settings/Onboarding-Fenster.
 // Phase 1: ConfigStore-Init, TrayPopup
 // Phase 2: Settings-Fenster, Onboarding-Pruefung, URL-Routing
 // Phase 3: Hotkey vollstaendig in Rust (kein JS-Stub), Aufnahme-Event-Listener
 // Phase 4: transcribe_and_inject invoke, transcription_state_changed Listener, AppState 5-State-Machine
+// Phase 5: AI-Command-Flow — command-select | reformulating | reformulated, inject_raw_text, auto-dismiss
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { load } from '@tauri-apps/plugin-store';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
@@ -104,8 +105,55 @@ function getWindowMode(): { isSettings: boolean; mode: string } {
 function App() {
   const { isSettings, mode } = getWindowMode();
 
-  // AppState: 5-State-Machine — idle | recording | processing | transcript | error (Phase 4)
+  // AppState: 8-State-Machine — idle | recording | processing | transcript | error | command-select | reformulating | reformulated (Phase 5)
   const [appState, setAppState] = useState<AppState>({ kind: 'idle' });
+
+  // Auto-Insert-Timer Referenz — 10s Auto-Dismiss aus command-select (D-04)
+  const autoInsertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-Insert-Timer loeschen
+  const clearAutoInsertTimer = () => {
+    if (autoInsertTimerRef.current) {
+      clearTimeout(autoInsertTimerRef.current);
+      autoInsertTimerRef.current = null;
+    }
+  };
+
+  // Raw-Transkript einfuegen (per D-02 "Einfuegen"-Button, per D-04 Auto-Dismiss)
+  const handleInsertRaw = (text: string) => {
+    clearAutoInsertTimer();
+    invoke('inject_raw_text', { text }).catch((err) => {
+      console.error('Speakly: inject_raw_text Fehler:', err);
+    });
+    setAppState({ kind: 'transcript', text });
+    setTimeout(() => setAppState({ kind: 'idle' }), 2000);
+  };
+
+  // AI-Command ausfuehren (per D-08, D-14, D-15, D-11)
+  const handleCommandSelect = async (commandId: string, rawText: string) => {
+    clearAutoInsertTimer();
+    setAppState({ kind: 'reformulating', text: rawText });
+
+    try {
+      // Claude API via Tauri-Command aufrufen (per D-08, D-09)
+      const reformulated = await invoke<string>('apply_ai_command', {
+        commandId,
+        text: rawText,
+      });
+      // Reformulierten Text kurz anzeigen (per D-15), dann einfuegen
+      setAppState({ kind: 'reformulated', text: reformulated });
+      await invoke('inject_raw_text', { text: reformulated });
+      setTimeout(() => setAppState({ kind: 'idle' }), 2000);
+    } catch (err) {
+      // Fehler → Fehlermeldung anzeigen + raw transcript einfuegen als Fallback (per D-11)
+      const message = typeof err === 'string' ? err : 'AI-Umformulierung fehlgeschlagen';
+      setAppState({ kind: 'error', message });
+      // Fallback: raw einfuegen nach 2s (per D-11)
+      setTimeout(() => {
+        handleInsertRaw(rawText);
+      }, 2000);
+    }
+  };
 
   useEffect(() => {
     if (!isSettings) {
@@ -115,13 +163,19 @@ function App() {
         .then(() => checkOnboarding())
         .catch(console.error);
 
-      // Phase 3 + Phase 4: Aufnahme- und Transkriptions-Events empfangen
+      // Phase 3 + Phase 4 + Phase 5: Aufnahme- und Transkriptions-Events empfangen
       const unlisteners: Array<() => void> = [];
 
-      // Aufnahme-Status → AppState aktualisieren (Phase 4: vollstaendige State-Machine)
+      // Aufnahme-Status → AppState aktualisieren
       listen<{ recording: boolean; mode: string }>('recording_state_changed', (event) => {
         console.log('Speakly: Aufnahme-Status', event.payload);
-        setAppState(event.payload.recording ? { kind: 'recording' } : { kind: 'idle' });
+        if (event.payload.recording) {
+          // Neuer Aufnahmestart — falls in command-select → abbrechen ohne paste (per D-16)
+          clearAutoInsertTimer();
+          setAppState({ kind: 'recording' });
+        } else {
+          setAppState({ kind: 'idle' });
+        }
       }).then(ul => unlisteners.push(ul));
 
       // Aufnahme verworfen (VAD) — kein STT-Aufruf (D-24)
@@ -142,15 +196,24 @@ function App() {
       }).then(ul => unlisteners.push(ul));
 
       // Transkriptions-Status-Events vom Backend empfangen (D-19, D-21, D-22)
-      listen<TranscriptionStatePayload>('transcription_state_changed', (event) => {
+      listen<TranscriptionStatePayload>('transcription_state_changed', async (event) => {
         const p = event.payload;
         if (p.state === 'processing') {
           // D-19: "Verarbeite..." waehrend Whisper API-Aufruf
           setAppState({ kind: 'processing' });
         } else if (p.state === 'done') {
-          // D-21: Transkription kurz anzeigen, dann nach 2 Sekunden zurueck zu idle
-          setAppState({ kind: 'transcript', text: p.text });
-          setTimeout(() => setAppState({ kind: 'idle' }), 2000);
+          // Phase 5: API-Key pruefen um Buttons korrekt zu aktivieren/deaktivieren (per D-03)
+          const store = await load('settings.json', { defaults: {}, autoSave: true });
+          const anthropicKey = await store.get<string>('anthropic_api_key') ?? '';
+          const hasApiKey = anthropicKey.trim().length > 0;
+
+          // command-select anzeigen statt direkt paste (per D-01)
+          setAppState({ kind: 'command-select', text: p.text, hasApiKey });
+
+          // Auto-Dismiss nach 10 Sekunden → raw transcript einfuegen (per D-04)
+          autoInsertTimerRef.current = setTimeout(() => {
+            handleInsertRaw(p.text);
+          }, 10000);
         } else if (p.state === 'error') {
           // D-22: Fehler 5 Sekunden anzeigen, dann zurueck zu idle
           setAppState({ kind: 'error', message: p.message });
@@ -159,7 +222,10 @@ function App() {
       }).then(ul => unlisteners.push(ul));
 
       // Cleanup bei Unmount
-      return () => { unlisteners.forEach(ul => ul()); };
+      return () => {
+        clearAutoInsertTimer();
+        unlisteners.forEach(ul => ul());
+      };
     }
   }, [isSettings]);
 
@@ -172,12 +238,22 @@ function App() {
     );
   }
 
-  // Haupt-Fenster: TrayPopup mit AppState
+  // Haupt-Fenster: TrayPopup mit AppState und AI-Command-Callbacks
   return (
     <div className="w-full h-screen overflow-hidden">
       <TrayPopup
         onSettingsClick={() => openSettingsWindow('settings')}
         appState={appState}
+        onCommandSelect={(commandId) => {
+          if (appState.kind === 'command-select') {
+            handleCommandSelect(commandId, appState.text);
+          }
+        }}
+        onInsertRaw={() => {
+          if (appState.kind === 'command-select') {
+            handleInsertRaw(appState.text);
+          }
+        }}
       />
     </div>
   );

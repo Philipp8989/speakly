@@ -190,6 +190,15 @@ async fn apply_ai_command(
     crate::ai::call_claude_api(&app, &command_id, &text).await
 }
 
+// Phase 5: Raw-Text direkt injizieren — fuer "Einfuegen"-Button und AI-Fallback (D-02, D-11)
+#[tauri::command]
+async fn inject_raw_text(
+    app: tauri::AppHandle,
+    text: String,
+) -> Result<(), String> {
+    crate::inject::inject_text(&app, &text).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri_plugin_global_shortcut::{Builder as ShortcutBuilder, ShortcutState};
@@ -267,6 +276,7 @@ pub fn run() {
             stop_recording_hold,
             transcribe_and_inject,   // Phase 4
             apply_ai_command,        // Phase 5
+            inject_raw_text,         // Phase 5
         ])
         .setup(|app| {
             // ConfigStore initialisieren — Standardwerte beim ersten Start setzen
