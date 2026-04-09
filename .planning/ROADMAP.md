@@ -100,7 +100,11 @@ Plans:
   2. Applying a command sends text to Claude API and inserts the reformulated result
   3. Commands use the user's own Anthropic API key from settings
   4. User can skip AI commands and insert raw transcription directly
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 05-01-PLAN.md — Rust backend: ai/mod.rs (Claude API + 6 command presets), apply_ai_command + inject_raw_text commands in lib.rs
+- [ ] 05-02-PLAN.md — Frontend: TrayPopup 7-state machine, App.tsx full AI command flow (command-select, reformulating, reformulated, auto-dismiss, cancel)
+- [ ] 05-03-PLAN.md — Human verification of all 4 Phase 5 success criteria
 **UI hint**: yes
 
 ### Phase 6: Offline Fallback
@@ -136,6 +140,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
-| 5. AI Commands | 0/TBD | Not started | - |
+| 5. AI Commands | 0/3 | Not started | - |
 | 6. Offline Fallback | 0/TBD | Not started | - |
 | 7. Distribution & Signing | 0/TBD | Not started | - |
