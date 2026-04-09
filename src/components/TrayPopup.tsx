@@ -1,4 +1,4 @@
-// Speakly Tray-Popup — Phase 5: 8-State-Machine (idle | recording | processing | transcript | error | command-select | reformulating | reformulated)
+// Speakly Tray-Popup — Phase 5: 8-State-Machine + Phase 6: 2 neue States (download-needed | downloading)
 // D-01: command-select nach Transkription, D-02: "Einfuegen"-Button, D-03: Buttons deaktiviert ohne API-Key
 // D-04: Auto-Dismiss nach 10s, D-13: Pill-Buttons, D-14: Reformulierungs-Spinner, D-15: Ergebnis 2s anzeigen
 
@@ -11,7 +11,10 @@ export type AppState =
   | { kind: 'error'; message: string }
   | { kind: 'command-select'; text: string; hasApiKey: boolean }  // NEU: Transkript + Buttons (D-01)
   | { kind: 'reformulating'; text: string }                        // NEU: Spinner waehrend Claude API (D-14)
-  | { kind: 'reformulated'; text: string };                        // NEU: Ergebnis vor Paste anzeigen (D-15)
+  | { kind: 'reformulated'; text: string }                         // NEU: Ergebnis vor Paste anzeigen (D-15)
+  // Phase 6: Offline Fallback
+  | { kind: 'download-needed' }                                    // Modell fehlt — User soll Settings oeffnen
+  | { kind: 'downloading'; percent: number; downloadedMb: number; totalMb: number }; // Download laeuft
 
 // Verfuegbare AI-Commands (D-05)
 const AI_COMMANDS = [
@@ -42,6 +45,8 @@ export function TrayPopup({ onSettingsClick, appState, onCommandSelect, onInsert
       case 'command-select': return 'w-3 h-3 rounded-full bg-blue-500';
       case 'reformulating':  return 'w-3 h-3 rounded-full bg-blue-500 animate-pulse';
       case 'reformulated':   return 'w-3 h-3 rounded-full bg-green-500';
+      case 'download-needed': return 'w-3 h-3 rounded-full bg-orange-400';
+      case 'downloading':     return 'w-3 h-3 rounded-full bg-blue-400 animate-pulse';
     }
   })();
 
@@ -54,8 +59,10 @@ export function TrayPopup({ onSettingsClick, appState, onCommandSelect, onInsert
       case 'transcript':     return 'Eingefuegt';
       case 'error':          return 'Fehler';
       case 'command-select': return 'Befehl waehlen';
-      case 'reformulating':  return 'Formuliere um...';
-      case 'reformulated':   return 'Eingefuegt';
+      case 'reformulating':   return 'Formuliere um...';
+      case 'reformulated':    return 'Eingefuegt';
+      case 'download-needed': return 'Modell fehlt';
+      case 'downloading':     return `Herunterladen... ${appState.percent.toFixed(0)}%`;
     }
   })();
 
@@ -165,6 +172,35 @@ export function TrayPopup({ onSettingsClick, appState, onCommandSelect, onInsert
           </p>
         );
       }
+      case 'download-needed':
+        return (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-orange-300 break-words leading-relaxed">
+              Lokales Whisper-Modell nicht gefunden. Bitte in Einstellungen herunterladen.
+            </p>
+            <button
+              onClick={onSettingsClick}
+              className="text-xs px-2 py-1 bg-orange-900/40 border border-orange-600 text-orange-300 rounded hover:bg-orange-900/60 transition-colors"
+            >
+              Zu Einstellungen
+            </button>
+          </div>
+        );
+      case 'downloading':
+        return (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-blue-300">
+              Whisper-Modell: {appState.downloadedMb.toFixed(1)} / {appState.totalMb.toFixed(0)} MB
+            </p>
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${appState.percent}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">{appState.percent.toFixed(0)}% heruntergeladen</p>
+          </div>
+        );
     }
   })();
 
