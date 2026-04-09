@@ -1,6 +1,7 @@
 // Speakly SettingsPage — Einstellungen in einer scrollbaren Seite (D-06)
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { useSettings } from '../hooks/useSettings';
@@ -22,6 +23,25 @@ export function SettingsPage() {
   const [hotkeyConflict, setHotkeyConflict] = useState(false);
   const [hotkeySaving, setHotkeySaving] = useState(false);
 
+  // Download-State fuer STT-Sektion (D-10, D-12, D-13)
+  const [downloadState, setDownloadState] = useState<
+    | { status: 'idle' }
+    | { status: 'downloading'; percent: number; downloadedMb: number; totalMb: number }
+    | { status: 'done' }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
+
+  // Windows-Warning: einmal pro Session anzeigen (D-16)
+  const [windowsWarningSeen, setWindowsWarningSeen] = useState(false);
+  const [showWindowsWarning, setShowWindowsWarning] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
+
+  // Plattform-Erkennung per userAgent (plugin-os nicht installiert)
+  useEffect(() => {
+    const isWin = navigator.userAgent.toLowerCase().includes('windows');
+    setIsWindows(isWin);
+  }, []);
+
   // Fenster verbirgt sich beim Schliessen (D-07) — kein App-Quit
   useEffect(() => {
     const win = getCurrentWindow();
@@ -40,6 +60,72 @@ export function SettingsPage() {
       setAnthropicInput(settings.anthropic_api_key);
     }
   }, [loaded]);
+
+  async function handleSttModeChange(newMode: string) {
+    // Windows-Warning beim ersten Wechsel zu 'local' (D-15, D-16)
+    if (isWindows && newMode === 'local' && !windowsWarningSeen) {
+      setShowWindowsWarning(true);
+      setWindowsWarningSeen(true);
+    }
+
+    await setSetting('stt_mode', newMode);
+
+    // Modell-Check: invoke check_whisper_model_exists
+    // Wenn kein Modell und newMode = 'local' oder 'auto' → Download starten
+    if (newMode === 'local' || newMode === 'auto') {
+      try {
+        const exists = await invoke<boolean>('check_whisper_model_exists');
+        if (!exists) {
+          await startModelDownload();
+        }
+      } catch {
+        // check_whisper_model_exists nicht vorhanden (Plan 02 registriert es) → kein Download
+      }
+    }
+  }
+
+  async function startModelDownload() {
+    setDownloadState({ status: 'downloading', percent: 0, downloadedMb: 0, totalMb: 142 });
+
+    // Download-Progress hoeren
+    const unlistenProgress = await listen<{ percent: number; downloaded_mb: number; total_mb: number }>(
+      'whisper_download_progress',
+      (event) => {
+        setDownloadState({
+          status: 'downloading',
+          percent: event.payload.percent,
+          downloadedMb: event.payload.downloaded_mb,
+          totalMb: event.payload.total_mb,
+        });
+      }
+    );
+
+    const unlistenComplete = await listen('whisper_download_complete', () => {
+      setDownloadState({ status: 'done' });
+      unlistenProgress();
+      unlistenComplete();
+    });
+
+    const unlistenError = await listen<{ message: string }>('whisper_download_error', (e) => {
+      setDownloadState({ status: 'error', message: e.payload.message });
+      unlistenProgress();
+      unlistenComplete();
+    });
+
+    // Download starten (feuert Events asynchron)
+    invoke('download_whisper_model').catch((e: unknown) => {
+      const msg = typeof e === 'string' ? e : 'Download fehlgeschlagen';
+      setDownloadState({ status: 'error', message: msg });
+      unlistenProgress();
+      unlistenComplete();
+      unlistenError();
+    });
+  }
+
+  async function handleCancelDownload() {
+    await invoke('cancel_whisper_download');
+    setDownloadState({ status: 'idle' });
+  }
 
   async function handleSaveOpenaiKey() {
     await setSetting('openai_api_key', openaiInput.trim());
@@ -267,6 +353,81 @@ export function SettingsPage() {
           <p className="text-xs text-gray-500">
             "Automatisch" erkennt die Sprache selbst — empfohlen fuer mehrsprachige Nutzung.
           </p>
+        </div>
+      </section>
+
+      {/* STT-Engine-Sektion — D-01, D-02, D-05 */}
+      <section id="stt-engine-section">
+        <h2 className="text-sm font-medium text-gray-300 mb-2">Transkriptions-Engine</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">STT-Engine</label>
+            <select
+              value={settings.stt_mode ?? 'cloud'}
+              onChange={async (e) => { await handleSttModeChange(e.target.value); }}
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-gray-500"
+            >
+              <option value="cloud">Cloud (Whisper API) — schnell, benoetigt Internet</option>
+              <option value="local">Lokal (whisper.cpp) — offline, langsamer</option>
+              <option value="auto">Auto (lokal wenn offline)</option>
+            </select>
+          </div>
+
+          {/* Windows Speed Warning (D-15, D-16) */}
+          {showWindowsWarning && (
+            <div className="bg-yellow-900/30 border border-yellow-600 rounded p-2">
+              <p className="text-xs text-yellow-300">
+                Lokale Transkription kann auf diesem Geraet langsam sein (10-30x langsamer als Cloud).
+              </p>
+              <button
+                onClick={() => setShowWindowsWarning(false)}
+                className="mt-1 text-xs text-yellow-400 hover:text-yellow-200"
+              >
+                Verstanden
+              </button>
+            </div>
+          )}
+
+          {/* Download-Progress (D-12) */}
+          {downloadState.status === 'downloading' && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Whisper-Modell herunterladen...</span>
+                <span>{downloadState.downloadedMb.toFixed(1)} / {downloadState.totalMb.toFixed(0)} MB</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-1.5">
+                <div
+                  className="bg-blue-500 h-1.5 rounded-full transition-all"
+                  style={{ width: `${downloadState.percent}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">{downloadState.percent.toFixed(0)}%</span>
+                <button
+                  onClick={handleCancelDownload}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {downloadState.status === 'done' && (
+            <p className="text-xs text-green-400">Modell erfolgreich heruntergeladen.</p>
+          )}
+
+          {downloadState.status === 'error' && (
+            <div>
+              <p className="text-xs text-red-400">{downloadState.message}</p>
+              <button
+                onClick={startModelDownload}
+                className="mt-1 text-xs text-blue-400 hover:text-blue-300"
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
