@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Recording Core** - Global hotkey + audio capture + waveform feedback + VAD gate (completed 2026-04-09)
 - [x] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field (completed 2026-04-09)
 - [x] **Phase 5: AI Commands** - Claude API reformulation with preset commands (completed 2026-04-09)
-- [ ] **Phase 6: Offline Fallback** - whisper.cpp local STT + engine selection
+- [x] **Phase 6: Offline Fallback** - whisper.cpp local STT + engine selection (completed 2026-04-09)
 - [ ] **Phase 7: Distribution & Signing** - macOS notarization + Windows signing + CI pipeline
 
 ## Phase Details
@@ -121,7 +121,7 @@ Plans:
 - [x] 06-01-PLAN.md — Rust backend: whisper-rs dep, stt/local.rs (call_whisper_local + resample), stt/download.rs (download_whisper_model + cancel + model_exists)
 - [x] 06-02-PLAN.md — Rust routing: stt/mod.rs exports, transcribe_and_inject mit stt_mode-Router (cloud/local/auto), neue Commands in invoke_handler
 - [x] 06-03-PLAN.md — Frontend: SettingsPage STT-Engine-Dropdown + Download-Progress + Windows-Warning, TrayPopup download-needed + downloading States
-- [ ] 06-04-PLAN.md — Human verification of all 4 Phase 6 success criteria
+- [x] 06-04-PLAN.md — Human verification of all 4 Phase 6 success criteria
 
 ### Phase 7: Distribution & Signing
 **Goal**: Signed, notarized app installers exist for macOS (arm64 + x86_64) and Windows that any team member can install without security warnings
@@ -146,5 +146,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
 | 5. AI Commands | 3/3 | Complete    | 2026-04-09 |
-| 6. Offline Fallback | 3/4 | In Progress|  |
+| 6. Offline Fallback | 4/4 | Complete    | 2026-04-09 |
 | 7. Distribution & Signing | 0/TBD | Not started | - |
