@@ -29,7 +29,7 @@ export function useSettings() {
 
   useEffect(() => {
     // Einstellungen beim ersten Render laden
-    load('settings.json', { autoSave: true }).then(async (s) => {
+    load('settings.json', { defaults: {}, autoSave: true }).then(async (s) => {
       const result: Settings = { ...DEFAULTS };
       for (const key of Object.keys(DEFAULTS) as (keyof Settings)[]) {
         const val = await s.get<Settings[typeof key]>(key);
