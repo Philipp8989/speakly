@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: App Shell** - Tauri scaffold + system tray + cross-platform lifecycle (no audio) (completed 2026-04-09)
 - [x] **Phase 2: Settings & Onboarding** - Hotkey config, API key input, permission flow, first-run onboarding (completed 2026-04-09)
 - [x] **Phase 3: Recording Core** - Global hotkey + audio capture + waveform feedback + VAD gate (completed 2026-04-09)
-- [ ] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field
+- [x] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field (completed 2026-04-09)
 - [ ] **Phase 5: AI Commands** - Claude API reformulation with preset commands
 - [ ] **Phase 6: Offline Fallback** - whisper.cpp local STT + engine selection
 - [ ] **Phase 7: Distribution & Signing** - macOS notarization + Windows signing + CI pipeline
@@ -87,9 +87,9 @@ Plans:
   5. End-to-end flow works in at least: browser text field, VS Code, Slack, macOS Notes
 **Plans**: 3 plans
 Plans:
-- [ ] 04-01-PLAN.md — Rust backend: add enigo + clipboard-manager deps, stt/mod.rs (Whisper API), inject/mod.rs (clipboard save/paste/restore), transcribe_and_inject command
-- [ ] 04-02-PLAN.md — Frontend: TrayPopup 5-state machine, App.tsx event wiring (recording_stopped + transcription_state_changed), language dropdown in SettingsPage
-- [ ] 04-03-PLAN.md — Human verification of all 5 Phase 4 success criteria
+- [x] 04-01-PLAN.md — Rust backend: add enigo + clipboard-manager deps, stt/mod.rs (Whisper API), inject/mod.rs (clipboard save/paste/restore), transcribe_and_inject command
+- [x] 04-02-PLAN.md — Frontend: TrayPopup 5-state machine, App.tsx event wiring (recording_stopped + transcription_state_changed), language dropdown in SettingsPage
+- [x] 04-03-PLAN.md — Human verification of all 5 Phase 4 success criteria
 
 ### Phase 5: AI Commands
 **Goal**: User can apply AI reformulation commands to transcribed text before it is inserted
@@ -135,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. App Shell | 4/4 | Complete    | 2026-04-09 |
 | 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
-| 4. Cloud STT + Text Injection | 0/3 | Not started | - |
+| 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
 | 5. AI Commands | 0/TBD | Not started | - |
 | 6. Offline Fallback | 0/TBD | Not started | - |
 | 7. Distribution & Signing | 0/TBD | Not started | - |
