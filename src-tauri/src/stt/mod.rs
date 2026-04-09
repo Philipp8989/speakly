@@ -1,6 +1,10 @@
-// Speakly — STT-Modul (Phase 4)
+// Speakly — STT-Modul (Phase 4 + Phase 6)
 // Sendet WAV-Puffer an die OpenAI Whisper API und gibt transkribierten Text zurueck.
+// Phase 6: Lokale STT via whisper-rs + Modell-Download.
 // Fehlerbehandlung: benutzerfreundliche deutsche Fehlermeldungen (D-04, D-05).
+
+pub mod local;
+pub mod download;
 
 use tauri_plugin_store::StoreExt;
 
