@@ -118,9 +118,9 @@ Plans:
   4. Windows shows a speed warning when using local mode on non-AVX2 hardware
 **Plans**: 4 plans
 Plans:
-- [ ] 06-01-PLAN.md — Rust backend: whisper-rs dep, stt/local.rs (call_whisper_local + resample), stt/download.rs (download_whisper_model + cancel + model_exists)
-- [ ] 06-02-PLAN.md — Rust routing: stt/mod.rs exports, transcribe_and_inject mit stt_mode-Router (cloud/local/auto), neue Commands in invoke_handler
-- [ ] 06-03-PLAN.md — Frontend: SettingsPage STT-Engine-Dropdown + Download-Progress + Windows-Warning, TrayPopup download-needed + downloading States
+- [x] 06-01-PLAN.md — Rust backend: whisper-rs dep, stt/local.rs (call_whisper_local + resample), stt/download.rs (download_whisper_model + cancel + model_exists)
+- [x] 06-02-PLAN.md — Rust routing: stt/mod.rs exports, transcribe_and_inject mit stt_mode-Router (cloud/local/auto), neue Commands in invoke_handler
+- [x] 06-03-PLAN.md — Frontend: SettingsPage STT-Engine-Dropdown + Download-Progress + Windows-Warning, TrayPopup download-needed + downloading States
 - [ ] 06-04-PLAN.md — Human verification of all 4 Phase 6 success criteria
 
 ### Phase 7: Distribution & Signing
@@ -146,5 +146,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
 | 5. AI Commands | 3/3 | Complete    | 2026-04-09 |
-| 6. Offline Fallback | 0/4 | Not started | - |
+| 6. Offline Fallback | 3/4 | In Progress|  |
 | 7. Distribution & Signing | 0/TBD | Not started | - |

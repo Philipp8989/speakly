@@ -1,5 +1,6 @@
 // Speakly — Lokale STT via whisper-rs (Phase 6, D-05 bis D-09)
 use std::path::PathBuf;
+use tauri::Manager;
 
 /// Gibt den Pfad zur gespeicherten Modelldatei zurueck.
 /// Speicherort: app_data_dir()/ggml-base.bin (per D-07)

@@ -10,6 +10,18 @@ mod stt;
 mod inject;
 mod ai;
 
+// Phase 6: SttMode fuer Engine-Auswahl (D-01, D-02, D-05)
+#[derive(Debug, PartialEq)]
+enum SttMode { Cloud, Local, Auto }
+
+fn parse_stt_mode(s: &str) -> SttMode {
+    match s {
+        "local" => SttMode::Local,
+        "auto"  => SttMode::Auto,
+        _       => SttMode::Cloud, // Default: cloud (D-02)
+    }
+}
+
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
 use serde_json::json;
@@ -121,8 +133,8 @@ async fn stop_recording_hold(
     Ok(())
 }
 
-// Phase 4: Vollstaendige STT + Injektions-Pipeline in einem Command (D-23)
-// Liest WAV-Puffer aus RecordingState, transkribiert via Whisper API, injiziert Text.
+// Phase 4 + Phase 6: Vollstaendige STT + Injektions-Pipeline in einem Command (D-23)
+// Phase 6: stt_mode-Router (cloud/local/auto) mit 3s Timeout fuer auto-Fallback (D-03, D-04, D-05).
 // Emittiert "transcription_state_changed" Events fuer Frontend-UX (D-19, D-21, D-22).
 #[tauri::command]
 async fn transcribe_and_inject(
@@ -130,30 +142,97 @@ async fn transcribe_and_inject(
     state: tauri::State<'_, RecordingState>,
 ) -> Result<String, String> {
     use tauri::Emitter;
+    use std::sync::atomic::Ordering;
 
-    // WAV-Puffer aus State holen (per D-23)
-    let wav = {
-        let lock = state.wav_buffer.lock().unwrap();
-        lock.clone().ok_or_else(|| "Kein WAV-Puffer vorhanden".to_string())?
+    // stt_mode aus ConfigStore lesen (D-04: Schluessel seit Phase 1 vorhanden)
+    let stt_mode = {
+        let store = app.store("settings.json").map_err(|e| e.to_string())?;
+        let mode_str = store.get("stt_mode")
+            .and_then(|v| v.as_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| "cloud".to_string());
+        parse_stt_mode(&mode_str)
     };
 
-    // Verarbeitungs-State senden (per D-19)
+    // Verarbeitungs-State senden
     let _ = app.emit("transcription_state_changed", serde_json::json!({
         "state": "processing"
     }));
 
-    // Whisper API aufrufen (per D-01 bis D-08)
-    let text = match crate::stt::call_whisper_api(&app, wav).await {
-        Ok(t) => t,
-        Err(e) => {
-            let _ = app.emit("transcription_state_changed", serde_json::json!({
-                "state": "error", "message": e
-            }));
-            return Err(e);
+    // Engine-Router (D-03, D-04, D-05)
+    let text = match stt_mode {
+        SttMode::Cloud => {
+            // Cloud: WAV-Puffer holen und Whisper API aufrufen
+            let wav = {
+                let lock = state.wav_buffer.lock().unwrap();
+                lock.clone().ok_or_else(|| "Kein WAV-Puffer vorhanden".to_string())?
+            };
+            crate::stt::call_whisper_api(&app, wav).await?
+        }
+
+        SttMode::Local => {
+            // Local: Modell pruefen, f32-Samples direkt weitergeben (D-09)
+            if !crate::stt::download::model_exists(&app) {
+                let err = "Whisper-Modell nicht gefunden — bitte in Einstellungen herunterladen";
+                let _ = app.emit("transcription_state_changed", serde_json::json!({
+                    "state": "error", "message": err
+                }));
+                return Err(err.into());
+            }
+            let (samples, rate) = {
+                let buf = state.audio_buffer.lock().unwrap().clone();
+                let rate = *state.native_sample_rate.lock().unwrap();
+                (buf, rate)
+            };
+            // Synchron in eigenem Thread (D-08: blockiert nicht den async-Runtime)
+            let app2 = app.clone();
+            tokio::task::spawn_blocking(move || {
+                crate::stt::local::call_whisper_local(&app2, &samples, rate)
+            })
+            .await
+            .map_err(|e| format!("Thread-Fehler: {e}"))??
+        }
+
+        SttMode::Auto => {
+            // Auto: Cloud-Versuch mit 3s Timeout; bei Netzwerkfehler → local (D-03)
+            let wav = {
+                let lock = state.wav_buffer.lock().unwrap();
+                lock.clone().ok_or_else(|| "Kein WAV-Puffer vorhanden".to_string())?
+            };
+
+            let cloud_result = tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                crate::stt::call_whisper_api(&app, wav),
+            )
+            .await;
+
+            match cloud_result {
+                Ok(Ok(t)) => t,  // Cloud erfolgreich
+                _ => {
+                    // Netzwerkfehler oder Timeout → lokal fallback (D-03)
+                    if !crate::stt::download::model_exists(&app) {
+                        let err = "Auto-Modus: Offline erkannt, aber kein lokales Modell — bitte herunterladen";
+                        let _ = app.emit("transcription_state_changed", serde_json::json!({
+                            "state": "error", "message": err
+                        }));
+                        return Err(err.into());
+                    }
+                    let (samples, rate) = {
+                        let buf = state.audio_buffer.lock().unwrap().clone();
+                        let rate = *state.native_sample_rate.lock().unwrap();
+                        (buf, rate)
+                    };
+                    let app2 = app.clone();
+                    tokio::task::spawn_blocking(move || {
+                        crate::stt::local::call_whisper_local(&app2, &samples, rate)
+                    })
+                    .await
+                    .map_err(|e| format!("Thread-Fehler: {e}"))??
+                }
+            }
         }
     };
 
-    // Leeres Ergebnis → kein Paste (per D-06)
+    // Leeres Ergebnis behandeln
     if text.trim().is_empty() {
         let _ = app.emit("transcription_state_changed", serde_json::json!({
             "state": "error", "message": "Keine Sprache erkannt"
@@ -161,7 +240,7 @@ async fn transcribe_and_inject(
         return Ok(String::new());
     }
 
-    // Text injizieren (per D-10 bis D-18)
+    // Text injizieren
     if let Err(e) = crate::inject::inject_text(&app, &text).await {
         let _ = app.emit("transcription_state_changed", serde_json::json!({
             "state": "error", "message": e
@@ -169,7 +248,6 @@ async fn transcribe_and_inject(
         return Err(e);
     }
 
-    // Erfolg melden mit Transkriptionstext (per D-21, D-23)
     let _ = app.emit("transcription_state_changed", serde_json::json!({
         "state": "done", "text": text.trim()
     }));
@@ -274,9 +352,11 @@ pub fn run() {
             check_macos_permissions,
             toggle_recording,
             stop_recording_hold,
-            transcribe_and_inject,   // Phase 4
+            transcribe_and_inject,   // Phase 4 + Phase 6
             apply_ai_command,        // Phase 5
             inject_raw_text,         // Phase 5
+            crate::stt::download::download_whisper_model,   // Phase 6
+            crate::stt::download::cancel_whisper_download,  // Phase 6
         ])
         .setup(|app| {
             // ConfigStore initialisieren — Standardwerte beim ersten Start setzen
@@ -318,4 +398,18 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("Fehler beim Starten der Speakly-Anwendung");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_stt_mode() {
+        assert_eq!(parse_stt_mode("cloud"), SttMode::Cloud);
+        assert_eq!(parse_stt_mode("local"), SttMode::Local);
+        assert_eq!(parse_stt_mode("auto"),  SttMode::Auto);
+        assert_eq!(parse_stt_mode(""),      SttMode::Cloud); // Default
+        assert_eq!(parse_stt_mode("unbekannt"), SttMode::Cloud); // Default
+    }
 }
