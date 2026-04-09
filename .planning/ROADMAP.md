@@ -68,7 +68,12 @@ Plans:
   3. Tray icon changes state during recording and processing
   4. Audio level / waveform is visible in the popup while recording
   5. Recording stops automatically after the configured silence duration; sub-0.5s or silent recordings are discarded without pasting anything
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 03-01-PLAN.md — Rust recording module: cpal capture, RMS VAD, hound WAV encoder, silence auto-stop, unit tests
+- [ ] 03-02-PLAN.md — Tauri wiring: RecordingState managed state, hotkey with_handler (hold vs toggle), tray icon ID fix, ConfigStore Phase 3 defaults, JS stub removal
+- [ ] 03-03-PLAN.md — Frontend: AudioLevelBars component, TrayPopup extended with recording state + event listeners
+- [ ] 03-04-PLAN.md — Human verification of all 5 Phase 3 success criteria
 
 ### Phase 4: Cloud STT + Text Injection (MVP)
 **Goal**: Dictated speech is reliably transcribed and injected into the active text field without destroying the user's clipboard
@@ -125,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. App Shell | 4/4 | Complete    | 2026-04-09 |
 | 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
-| 3. Recording Core | 0/TBD | Not started | - |
+| 3. Recording Core | 0/4 | Not started | - |
 | 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
 | 5. AI Commands | 0/TBD | Not started | - |
 | 6. Offline Fallback | 0/TBD | Not started | - |
