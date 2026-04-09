@@ -1,11 +1,13 @@
-// Speakly — Tauri App Setup (Phase 1 + Phase 2 + Phase 3)
+// Speakly — Tauri App Setup (Phase 1 + Phase 2 + Phase 3 + Phase 4)
 // Initialisiert alle Plugins, den System Tray und das Close-to-Tray-Verhalten.
 // Phase 2: Tauri-Commands fuer API-Key-Validierung, Geraete-Enumeration, macOS-Berechtigungen.
 // Phase 3: RecordingState verwaltet, Hotkey-Handler mit Hold-vs-Toggle-Logik, neue Commands.
+// Phase 4: STT + Text-Injektion — transcribe_and_inject Command.
 
 mod tray;
 mod recording;
 mod stt;
+mod inject;
 
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
@@ -118,6 +120,62 @@ async fn stop_recording_hold(
     Ok(())
 }
 
+// Phase 4: Vollstaendige STT + Injektions-Pipeline in einem Command (D-23)
+// Liest WAV-Puffer aus RecordingState, transkribiert via Whisper API, injiziert Text.
+// Emittiert "transcription_state_changed" Events fuer Frontend-UX (D-19, D-21, D-22).
+#[tauri::command]
+async fn transcribe_and_inject(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, RecordingState>,
+) -> Result<String, String> {
+    use tauri::Emitter;
+
+    // WAV-Puffer aus State holen (per D-23)
+    let wav = {
+        let lock = state.wav_buffer.lock().unwrap();
+        lock.clone().ok_or_else(|| "Kein WAV-Puffer vorhanden".to_string())?
+    };
+
+    // Verarbeitungs-State senden (per D-19)
+    let _ = app.emit("transcription_state_changed", serde_json::json!({
+        "state": "processing"
+    }));
+
+    // Whisper API aufrufen (per D-01 bis D-08)
+    let text = match crate::stt::call_whisper_api(&app, wav).await {
+        Ok(t) => t,
+        Err(e) => {
+            let _ = app.emit("transcription_state_changed", serde_json::json!({
+                "state": "error", "message": e
+            }));
+            return Err(e);
+        }
+    };
+
+    // Leeres Ergebnis → kein Paste (per D-06)
+    if text.trim().is_empty() {
+        let _ = app.emit("transcription_state_changed", serde_json::json!({
+            "state": "error", "message": "Keine Sprache erkannt"
+        }));
+        return Ok(String::new());
+    }
+
+    // Text injizieren (per D-10 bis D-18)
+    if let Err(e) = crate::inject::inject_text(&app, &text).await {
+        let _ = app.emit("transcription_state_changed", serde_json::json!({
+            "state": "error", "message": e
+        }));
+        return Err(e);
+    }
+
+    // Erfolg melden mit Transkriptionstext (per D-21, D-23)
+    let _ = app.emit("transcription_state_changed", serde_json::json!({
+        "state": "done", "text": text.trim()
+    }));
+
+    Ok(text)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri_plugin_global_shortcut::{Builder as ShortcutBuilder, ShortcutState};
@@ -177,7 +235,9 @@ pub fn run() {
                 })
                 .build()
         })
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        // Phase 4: Clipboard-Manager fuer save/write/restore (D-10 bis D-13)
+        .plugin(tauri_plugin_clipboard_manager::init());
 
     // macOS-only: Berechtigungs-Plugin (kein Windows-Aequivalent)
     #[cfg(target_os = "macos")]
@@ -190,7 +250,8 @@ pub fn run() {
             list_audio_input_devices,
             check_macos_permissions,
             toggle_recording,
-            stop_recording_hold
+            stop_recording_hold,
+            transcribe_and_inject,   // Phase 4
         ])
         .setup(|app| {
             // ConfigStore initialisieren — Standardwerte beim ersten Start setzen
