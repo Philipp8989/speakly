@@ -50,7 +50,12 @@ Plans:
   3. User can remap the global hotkey from the settings UI
   4. macOS Microphone and Accessibility permissions are checked; user is deep-linked to System Preferences if denied
   5. All settings persist across app restarts
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 02-01-PLAN.md — Rust backend: reqwest + cpal deps, Tauri commands (validate keys, list mics, check permissions), ConfigStore Phase 2 defaults, updated capabilities
+- [ ] 02-02-PLAN.md — Settings UI: useSettings hook + SettingsPage (API keys section + hotkey remap section)
+- [ ] 02-03-PLAN.md — Onboarding wizard (4 steps) + App.tsx wiring (window creation, onboarding check, URL routing)
+- [ ] 02-04-PLAN.md — Human verification of all 5 Phase 2 success criteria
 **UI hint**: yes
 
 ### Phase 3: Recording Core
@@ -119,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Shell | 4/4 | Complete    | 2026-04-09 |
-| 2. Settings & Onboarding | 0/TBD | Not started | - |
+| 2. Settings & Onboarding | 0/4 | Not started | - |
 | 3. Recording Core | 0/TBD | Not started | - |
 | 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
 | 5. AI Commands | 0/TBD | Not started | - |
