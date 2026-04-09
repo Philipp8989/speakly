@@ -12,7 +12,7 @@ Seven phases deliver Speakly from bare Tauri scaffold to signed, distributable c
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: App Shell** - Tauri scaffold + system tray + cross-platform lifecycle (no audio)
+- [x] **Phase 1: App Shell** - Tauri scaffold + system tray + cross-platform lifecycle (no audio) (completed 2026-04-09)
 - [ ] **Phase 2: Settings & Onboarding** - Hotkey config, API key input, permission flow, first-run onboarding
 - [ ] **Phase 3: Recording Core** - Global hotkey + audio capture + waveform feedback + VAD gate
 - [ ] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field
@@ -34,10 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. ConfigStore is initialized and persists a test key across restarts
 **Plans**: 4 plans
 Plans:
-- [ ] 01-01-PLAN.md — Scaffold Tauri project, install plugins (store, positioner, global-shortcut), configure capabilities and window
-- [ ] 01-02-PLAN.md — Rust tray backend: TrayIconBuilder, positioned popup toggle, quit menu, close-to-tray intercept
-- [ ] 01-03-PLAN.md — React frontend: TrayPopup UI, ConfigStore init, global hotkey registration stub
-- [ ] 01-04-PLAN.md — Human verification of all 5 Phase 1 success criteria
+- [x] 01-01-PLAN.md — Scaffold Tauri project, install plugins (store, positioner, global-shortcut), configure capabilities and window
+- [x] 01-02-PLAN.md — Rust tray backend: TrayIconBuilder, positioned popup toggle, quit menu, close-to-tray intercept
+- [x] 01-03-PLAN.md — React frontend: TrayPopup UI, ConfigStore init, global hotkey registration stub
+- [x] 01-04-PLAN.md — Human verification of all 5 Phase 1 success criteria
 **UI hint**: yes
 
 ### Phase 2: Settings & Onboarding
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. App Shell | 0/4 | Not started | - |
+| 1. App Shell | 4/4 | Complete    | 2026-04-09 |
 | 2. Settings & Onboarding | 0/TBD | Not started | - |
 | 3. Recording Core | 0/TBD | Not started | - |
 | 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
