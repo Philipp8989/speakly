@@ -5,6 +5,7 @@
 
 mod tray;
 mod recording;
+mod stt;
 
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
