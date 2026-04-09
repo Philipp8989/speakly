@@ -85,7 +85,11 @@ Plans:
   3. Language is auto-detected; user can also set a preferred language in settings
   4. The user's original clipboard content is intact after paste (save/restore works)
   5. End-to-end flow works in at least: browser text field, VS Code, Slack, macOS Notes
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 04-01-PLAN.md — Rust backend: add enigo + clipboard-manager deps, stt/mod.rs (Whisper API), inject/mod.rs (clipboard save/paste/restore), transcribe_and_inject command
+- [ ] 04-02-PLAN.md — Frontend: TrayPopup 5-state machine, App.tsx event wiring (recording_stopped + transcription_state_changed), language dropdown in SettingsPage
+- [ ] 04-03-PLAN.md — Human verification of all 5 Phase 4 success criteria
 
 ### Phase 5: AI Commands
 **Goal**: User can apply AI reformulation commands to transcribed text before it is inserted
@@ -131,7 +135,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. App Shell | 4/4 | Complete    | 2026-04-09 |
 | 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
-| 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
+| 4. Cloud STT + Text Injection | 0/3 | Not started | - |
 | 5. AI Commands | 0/TBD | Not started | - |
 | 6. Offline Fallback | 0/TBD | Not started | - |
 | 7. Distribution & Signing | 0/TBD | Not started | - |
