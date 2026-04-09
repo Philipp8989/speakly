@@ -13,7 +13,7 @@ Seven phases deliver Speakly from bare Tauri scaffold to signed, distributable c
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: App Shell** - Tauri scaffold + system tray + cross-platform lifecycle (no audio) (completed 2026-04-09)
-- [ ] **Phase 2: Settings & Onboarding** - Hotkey config, API key input, permission flow, first-run onboarding
+- [x] **Phase 2: Settings & Onboarding** - Hotkey config, API key input, permission flow, first-run onboarding (completed 2026-04-09)
 - [ ] **Phase 3: Recording Core** - Global hotkey + audio capture + waveform feedback + VAD gate
 - [ ] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field
 - [ ] **Phase 5: AI Commands** - Claude API reformulation with preset commands
@@ -52,10 +52,10 @@ Plans:
   5. All settings persist across app restarts
 **Plans**: 4 plans
 Plans:
-- [ ] 02-01-PLAN.md — Rust backend: reqwest + cpal deps, Tauri commands (validate keys, list mics, check permissions), ConfigStore Phase 2 defaults, updated capabilities
-- [ ] 02-02-PLAN.md — Settings UI: useSettings hook + SettingsPage (API keys section + hotkey remap section)
-- [ ] 02-03-PLAN.md — Onboarding wizard (4 steps) + App.tsx wiring (window creation, onboarding check, URL routing)
-- [ ] 02-04-PLAN.md — Human verification of all 5 Phase 2 success criteria
+- [x] 02-01-PLAN.md — Rust backend: reqwest + cpal deps, Tauri commands (validate keys, list mics, check permissions), ConfigStore Phase 2 defaults, updated capabilities
+- [x] 02-02-PLAN.md — Settings UI: useSettings hook + SettingsPage (API keys section + hotkey remap section)
+- [x] 02-03-PLAN.md — Onboarding wizard (4 steps) + App.tsx wiring (window creation, onboarding check, URL routing)
+- [x] 02-04-PLAN.md — Human verification of all 5 Phase 2 success criteria
 **UI hint**: yes
 
 ### Phase 3: Recording Core
@@ -124,7 +124,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Shell | 4/4 | Complete    | 2026-04-09 |
-| 2. Settings & Onboarding | 0/4 | Not started | - |
+| 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
 | 3. Recording Core | 0/TBD | Not started | - |
 | 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
 | 5. AI Commands | 0/TBD | Not started | - |
