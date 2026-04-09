@@ -40,3 +40,8 @@ impl Default for RecordingState {
 
 // Arc<AtomicBool> und Arc<Mutex<T>> sind Send + Sync — kein manuelles impl noetig.
 // Cargo-Check bestaetigt RecordingState: Send + Sync durch den Compiler.
+
+/// T-03-03 Sicherheitslimit: Maximale Puffergroesse fuer Audio-Samples.
+/// Bei 44100 Hz f32 entspricht das ~100 MB / 10 Minuten Aufnahme.
+/// Plan 02 prueft diesen Grenzwert beim Akkumulieren und stoppt ggf. mit "too_long".
+pub const MAX_BUFFER_SAMPLES: usize = 10 * 60 * 44100; // 10 Minuten bei 44100 Hz
