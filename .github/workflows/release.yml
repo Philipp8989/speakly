@@ -1,0 +1,172 @@
+# Speakly Release CI — Baut signierte Installer fuer macOS (universal) und Windows
+# Wird ausgefuehrt bei Tag-Push (z.B. v1.0.0) oder manuell via workflow_dispatch.
+#
+# Benoetigte GitHub Secrets fuer macOS Signing + Notarization:
+#   APPLE_CERTIFICATE          — Base64-kodiertes .p12 Developer-ID Zertifikat
+#   APPLE_CERTIFICATE_PASSWORD — Passwort fuer das .p12 Zertifikat
+#   APPLE_SIGNING_IDENTITY     — z.B. "Developer ID Application: Max Mustermann (XXXXXXXXXX)"
+#   APPLE_ID                   — Apple-ID (E-Mail) fuer Notarization
+#   APPLE_PASSWORD             — App-spezifisches Passwort (nicht das Apple-ID Passwort)
+#   APPLE_TEAM_ID              — Apple Developer Team ID (10-stelliger Code)
+#
+# Benoetigte GitHub Secrets fuer Windows Signing (optional):
+#   WINDOWS_CERTIFICATE        — Base64-kodiertes .pfx Zertifikat
+#   WINDOWS_CERTIFICATE_PASSWORD — Passwort fuer das .pfx Zertifikat
+#
+# Tauri Update-Signing (optional):
+#   TAURI_SIGNING_PRIVATE_KEY          — Privater Key fuer Tauri-Updates
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD — Passwort fuer den privaten Key
+#
+# Ohne Signing-Secrets werden unsigned Builds erstellt (fuer interne Tests geeignet).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag fuer den Release (z.B. v1.0.0)"
+        required: false
+        default: "v1.0.0"
+
+jobs:
+  # ---- macOS: Universal Binary (arm64 + x86_64) ----
+  build-macos:
+    name: Build macOS (universal)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Frontend-Abhaengigkeiten installieren
+        run: pnpm install
+
+      - name: Rust Toolchain einrichten
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust-Cache aktivieren
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # macOS Code-Signing Zertifikat importieren (falls Secret vorhanden)
+      - name: macOS Zertifikat importieren
+        if: ${{ env.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Temporaeren Keychain erstellen
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          # Zertifikat importieren
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k actions build.keychain
+          rm certificate.p12
+
+      - name: Tauri App bauen (macOS universal)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Speakly ${{ github.ref_name }}"
+          releaseBody: |
+            Speakly ${{ github.ref_name }} — Cross-Platform Voice-to-Text Desktop App.
+
+            **Installation:**
+            - macOS: `.dmg` herunterladen und in Applications-Ordner ziehen
+            - Windows: `.msi` herunterladen und ausfuehren
+
+            **API-Keys:**
+            Eigene OpenAI und Anthropic API-Keys in den Einstellungen eintragen.
+          releaseDraft: true
+          prerelease: false
+          args: --target universal-apple-darwin
+
+  # ---- Windows: x86_64 MSI ----
+  build-windows:
+    name: Build Windows (x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Frontend-Abhaengigkeiten installieren
+        run: pnpm install
+
+      - name: Rust Toolchain einrichten
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust-Cache aktivieren
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # Windows Code-Signing Zertifikat importieren (falls Secret vorhanden)
+      - name: Windows Zertifikat importieren
+        if: ${{ env.WINDOWS_CERTIFICATE != '' }}
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: powershell
+        run: |
+          $certBytes = [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE)
+          $certPath = "$env:RUNNER_TEMP\certificate.pfx"
+          [System.IO.File]::WriteAllBytes($certPath, $certBytes)
+          $certPassword = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
+          Import-PfxCertificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\My -Password $certPassword
+          Remove-Item $certPath
+
+      - name: Tauri App bauen (Windows x86_64)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Speakly ${{ github.ref_name }}"
+          releaseDraft: true
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc
