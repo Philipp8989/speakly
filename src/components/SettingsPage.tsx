@@ -238,6 +238,38 @@ export function SettingsPage() {
         </div>
       </section>
 
+      {/* Sprache-Sektion — D-09: language Dropdown mit "auto" als Standard (APP-03) */}
+      <section id="language-section">
+        <h2 className="text-sm font-medium text-gray-300 mb-2">Sprache</h2>
+        <div className="space-y-2">
+          <label className="text-xs text-gray-400 block">Transkriptionssprache (Whisper)</label>
+          <select
+            value={settings.language}
+            onChange={async (e) => { await setSetting('language', e.target.value); }}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-gray-500"
+          >
+            <option value="auto">Automatisch erkennen</option>
+            <option value="de">Deutsch</option>
+            <option value="en">Englisch</option>
+            <option value="fr">Franzoesisch</option>
+            <option value="es">Spanisch</option>
+            <option value="it">Italienisch</option>
+            <option value="pt">Portugiesisch</option>
+            <option value="nl">Niederlaendisch</option>
+            <option value="pl">Polnisch</option>
+            <option value="ru">Russisch</option>
+            <option value="zh">Chinesisch</option>
+            <option value="ja">Japanisch</option>
+            <option value="ko">Koreanisch</option>
+            <option value="ar">Arabisch</option>
+            <option value="tr">Tuerkisch</option>
+          </select>
+          <p className="text-xs text-gray-500">
+            "Automatisch" erkennt die Sprache selbst — empfohlen fuer mehrsprachige Nutzung.
+          </p>
+        </div>
+      </section>
+
       {/* Mikrofon-Sektion — ausgefuellt in Plan 04 */}
       <section id="microphone-section">
         <h2 className="text-sm font-medium text-gray-300 mb-2">Mikrofon</h2>
