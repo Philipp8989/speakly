@@ -32,7 +32,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Closing the window hides to tray instead of quitting on Windows
   4. App consumes minimal resources when idle (no audio, no network)
   5. ConfigStore is initialized and persists a test key across restarts
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Scaffold Tauri project, install plugins (store, positioner, global-shortcut), configure capabilities and window
+- [ ] 01-02-PLAN.md — Rust tray backend: TrayIconBuilder, positioned popup toggle, quit menu, close-to-tray intercept
+- [ ] 01-03-PLAN.md — React frontend: TrayPopup UI, ConfigStore init, global hotkey registration stub
+- [ ] 01-04-PLAN.md — Human verification of all 5 Phase 1 success criteria
 **UI hint**: yes
 
 ### Phase 2: Settings & Onboarding
@@ -113,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. App Shell | 0/TBD | Not started | - |
+| 1. App Shell | 0/4 | Not started | - |
 | 2. Settings & Onboarding | 0/TBD | Not started | - |
 | 3. Recording Core | 0/TBD | Not started | - |
 | 4. Cloud STT + Text Injection | 0/TBD | Not started | - |
