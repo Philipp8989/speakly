@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Settings & Onboarding** - Hotkey config, API key input, permission flow, first-run onboarding (completed 2026-04-09)
 - [x] **Phase 3: Recording Core** - Global hotkey + audio capture + waveform feedback + VAD gate (completed 2026-04-09)
 - [x] **Phase 4: Cloud STT + Text Injection (MVP)** - Whisper API + clipboard-safe paste into active field (completed 2026-04-09)
-- [ ] **Phase 5: AI Commands** - Claude API reformulation with preset commands
+- [x] **Phase 5: AI Commands** - Claude API reformulation with preset commands (completed 2026-04-09)
 - [ ] **Phase 6: Offline Fallback** - whisper.cpp local STT + engine selection
 - [ ] **Phase 7: Distribution & Signing** - macOS notarization + Windows signing + CI pipeline
 
@@ -102,9 +102,9 @@ Plans:
   4. User can skip AI commands and insert raw transcription directly
 **Plans**: 3 plans
 Plans:
-- [ ] 05-01-PLAN.md — Rust backend: ai/mod.rs (Claude API + 6 command presets), apply_ai_command + inject_raw_text commands in lib.rs
-- [ ] 05-02-PLAN.md — Frontend: TrayPopup 7-state machine, App.tsx full AI command flow (command-select, reformulating, reformulated, auto-dismiss, cancel)
-- [ ] 05-03-PLAN.md — Human verification of all 4 Phase 5 success criteria
+- [x] 05-01-PLAN.md — Rust backend: ai/mod.rs (Claude API + 6 command presets), apply_ai_command + inject_raw_text commands in lib.rs
+- [x] 05-02-PLAN.md — Frontend: TrayPopup 7-state machine, App.tsx full AI command flow (command-select, reformulating, reformulated, auto-dismiss, cancel)
+- [x] 05-03-PLAN.md — Human verification of all 4 Phase 5 success criteria
 **UI hint**: yes
 
 ### Phase 6: Offline Fallback
@@ -140,6 +140,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Settings & Onboarding | 4/4 | Complete    | 2026-04-09 |
 | 3. Recording Core | 4/4 | Complete    | 2026-04-09 |
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
-| 5. AI Commands | 0/3 | Not started | - |
+| 5. AI Commands | 3/3 | Complete    | 2026-04-09 |
 | 6. Offline Fallback | 0/TBD | Not started | - |
 | 7. Distribution & Signing | 0/TBD | Not started | - |
