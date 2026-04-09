@@ -3,6 +3,7 @@
 // Phase 2: Tauri-Commands fuer API-Key-Validierung, Geraete-Enumeration, macOS-Berechtigungen.
 
 mod tray;
+mod recording;
 
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
