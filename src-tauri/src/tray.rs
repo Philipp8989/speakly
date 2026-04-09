@@ -15,7 +15,8 @@ pub fn setup_tray(app: &mut App) -> tauri::Result<()> {
     let menu = Menu::with_items(app, &[&quit])?;
 
     // Tray-Icon aufbauen mit Icon, Menue und Event-Handlern
-    let _tray = TrayIconBuilder::new()
+    // with_id("main") erlaubt spaeteres Abrufen via app.tray_by_id("main") (Phase 3)
+    let _tray = TrayIconBuilder::with_id("main")
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
         // Linksklick zeigt das Popup-Fenster (nicht das Menue) — per D-01
