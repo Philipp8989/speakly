@@ -1,11 +1,12 @@
-// Speakly App Root — Phase 2
+// Speakly App Root — Phase 2 + Phase 3
 // Routet zwischen Tray-Popup und Settings/Onboarding-Fenster.
-// Phase 1: ConfigStore-Init, Hotkey-Registrierung, TrayPopup
+// Phase 1: ConfigStore-Init, TrayPopup
 // Phase 2: Settings-Fenster, Onboarding-Pruefung, URL-Routing
+// Phase 3: Hotkey vollstaendig in Rust (kein JS-Stub), Aufnahme-Event-Listener
 
 import { useEffect } from 'react';
 import { load } from '@tauri-apps/plugin-store';
-import { register } from '@tauri-apps/plugin-global-shortcut';
+import { listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { TrayPopup } from './components/TrayPopup';
 import { SettingsPage } from './components/SettingsPage';
@@ -32,20 +33,6 @@ async function initStore() {
     await store.set('onboarding_complete', false);
     await store.set('initialized', true);
     console.log('Speakly: Erststart — Standardeinstellungen gesetzt');
-  }
-}
-
-async function registerHotkey() {
-  try {
-    // Hotkey registrieren — Phase 2: Handler ist noch Stub
-    // Phase 3 ersetzt diesen Handler durch die Aufnahme-Logik
-    await register(DEFAULT_HOTKEY, (shortcut) => {
-      console.log('Speakly Hotkey ausgeloest (Phase 2 Stub):', shortcut);
-    });
-    console.log('Speakly: Hotkey registriert:', DEFAULT_HOTKEY);
-  } catch (err) {
-    // Hotkey-Konflikt: Ein anderes Programm hat diesen Shortcut bereits belegt
-    console.warn('Speakly: Hotkey-Registrierung fehlgeschlagen (Konflikt?):', err);
   }
 }
 
@@ -111,11 +98,26 @@ function App() {
 
   useEffect(() => {
     if (!isSettings) {
-      // Haupt-Fenster: Store initialisieren, Hotkey registrieren, Onboarding pruefen
+      // Haupt-Fenster: Store initialisieren, Onboarding pruefen
+      // Hotkey wird vollstaendig in Rust verwaltet (Phase 3) — kein JS-Stub noetig
       initStore()
         .then(() => checkOnboarding())
         .catch(console.error);
-      registerHotkey().catch(console.error);
+
+      // Phase 3: Aufnahme-Status Events empfangen
+      const unlisteners: Array<() => void> = [];
+
+      listen<{ recording: boolean; mode: string }>('recording_state_changed', (event) => {
+        console.log('Speakly: Aufnahme-Status', event.payload);
+        // Plan 03-03 verbindet diesen Event mit der UI
+      }).then(ul => unlisteners.push(ul));
+
+      listen<{ reason: string; duration_ms: number }>('recording_discarded', (event) => {
+        console.log('Speakly: Aufnahme verworfen —', event.payload.reason);
+      }).then(ul => unlisteners.push(ul));
+
+      // Cleanup bei Unmount
+      return () => { unlisteners.forEach(ul => ul()); };
     }
   }, [isSettings]);
 
