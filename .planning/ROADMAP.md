@@ -132,7 +132,11 @@ Plans:
   2. Windows .msi installs without SmartScreen warning (signed binary)
   3. Universal macOS binary runs on both Apple Silicon and Intel Macs
   4. GitHub Actions CI builds and signs both platforms on tag push
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 07-01-PLAN.md — Verify tauri.conf.json metadata and run local universal macOS build
+- [ ] 07-02-PLAN.md — GitHub Actions release workflow (matrix: macOS signing + notarization, Windows signing)
+- [ ] 07-03-PLAN.md — Human verification: trigger tag push, confirm all 4 success criteria
 
 ## Progress
 
@@ -147,4 +151,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Cloud STT + Text Injection | 3/3 | Complete    | 2026-04-09 |
 | 5. AI Commands | 3/3 | Complete    | 2026-04-09 |
 | 6. Offline Fallback | 4/4 | Complete    | 2026-04-09 |
-| 7. Distribution & Signing | 0/TBD | Not started | - |
+| 7. Distribution & Signing | 0/3 | Not started | - |
