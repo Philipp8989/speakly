@@ -1,4 +1,4 @@
-// Speakly — Tauri App Setup (Phase 1 + Phase 2 + Phase 3 + Phase 4)
+// Speakly — Tauri App Setup (Phase 1 + Phase 2 + Phase 3 + Phase 4 + Phase 5)
 // Initialisiert alle Plugins, den System Tray und das Close-to-Tray-Verhalten.
 // Phase 2: Tauri-Commands fuer API-Key-Validierung, Geraete-Enumeration, macOS-Berechtigungen.
 // Phase 3: RecordingState verwaltet, Hotkey-Handler mit Hold-vs-Toggle-Logik, neue Commands.
@@ -8,6 +8,7 @@ mod tray;
 mod recording;
 mod stt;
 mod inject;
+mod ai;
 
 use tauri::{Manager, WindowEvent};
 use tauri_plugin_store::StoreExt;
@@ -176,6 +177,19 @@ async fn transcribe_and_inject(
     Ok(text)
 }
 
+// Phase 5: AI-Command anwenden — Claude API Reformulierung (D-08 bis D-12)
+// command_id: "formal" | "kuerzer" | "translate_en_de" | "translate_de_en" | "email" | "slack"
+// text: Roh-Transkription aus Phase 4
+// Gibt reformulierten Text zurueck oder Fehlermeldung
+#[tauri::command]
+async fn apply_ai_command(
+    app: tauri::AppHandle,
+    command_id: String,
+    text: String,
+) -> Result<String, String> {
+    crate::ai::call_claude_api(&app, &command_id, &text).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri_plugin_global_shortcut::{Builder as ShortcutBuilder, ShortcutState};
@@ -252,6 +266,7 @@ pub fn run() {
             toggle_recording,
             stop_recording_hold,
             transcribe_and_inject,   // Phase 4
+            apply_ai_command,        // Phase 5
         ])
         .setup(|app| {
             // ConfigStore initialisieren — Standardwerte beim ersten Start setzen
